@@ -1,0 +1,73 @@
+#cloud-config
+
+ssh_pwauth: true
+
+groups:
+  - admingroup: [root,sys]
+  - cloud-users
+
+users:
+  - default
+  - name: <username>
+    groups: cloud-users
+    lock_passwd: false
+    passwd: <password>
+
+write_files:
+  - path: /etc/ssh/sshd_config
+    content: |
+         Port 22
+         Protocol 2
+         HostKey /etc/ssh/ssh_host_rsa_key
+         HostKey /etc/ssh/ssh_host_dsa_key
+         HostKey /etc/ssh/ssh_host_ecdsa_key
+         HostKey /etc/ssh/ssh_host_ed25519_key
+         UsePrivilegeSeparation yes
+         KeyRegenerationInterval 3600
+         ServerKeyBits 1024
+         SyslogFacility AUTH
+         LogLevel INFO
+         LoginGraceTime 120
+         PermitRootLogin yes
+         StrictModes yes
+         RSAAuthentication yes
+         PubkeyAuthentication yes
+         IgnoreRhosts yes
+         RhostsRSAAuthentication no
+         HostbasedAuthentication no
+         PermitEmptyPasswords no
+         ChallengeResponseAuthentication no
+         X11Forwarding yes
+         X11DisplayOffset 10
+         PrintMotd no
+         PrintLastLog yes
+         TCPKeepAlive yes
+         AcceptEnv LANG LC_*
+         Subsystem sftp /usr/lib/openssh/sftp-server
+         UsePAM yes
+  - path: /etc/resolv.conf
+    content: |
+      nameserver <ip_dns>
+    append: true
+  - path: /etc/motd
+    content: |
+      ==============================
+      |           Hello!           |
+      ==============================
+
+hostname: <hostname>
+
+package_update: true
+package_upgrade: true
+
+packages:
+  - git
+  - vim
+
+runcmd:
+  - yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+  - yum-config-manager --add-repo https://rpm.releases.hashicorp.com/RHEL/hashicorp.repo
+  - yum -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm https://dl.fedoraproject.org/pub/epel/epel-next-release-latest-9.noarch.rpm
+  - yum -y install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin terraform htop neofetch
+  - systemctl start docker
+  - systemctl enable docker
